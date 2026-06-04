@@ -54,7 +54,6 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <span id="statePill" class="status-pill pill-loading">加载中</span>
   <button id="btnLock" class="btn-ghost icon-btn" title="锁定" disabled>🔒</button>
   <button id="btnClear" class="btn-ghost icon-btn" title="清除所有本地数据" style="font-size:.75rem">🗑️</button>
-  <button id="btnSave" class="btn-accent" disabled>保存</button>
 </div>
 <div class="editor-wrap">
   <textarea id="editor" disabled placeholder="正在加载…"></textarea>
@@ -105,7 +104,7 @@ function setStatus(t,ok){ statusTxt.textContent=t; statusDot.className='dot '+(o
 function setTime(ts){ if(!ts){updatedAt.textContent='';return;} updatedAt.textContent='更新于 '+new Date(ts).toLocaleString('zh-CN'); }
 
 function applyLock(locked){
-  editor.disabled=locked; btnSave.disabled=locked; btnLock.disabled=false;
+  editor.disabled=locked; btnLock.disabled=false;
   if(locked){ editor.value=''; editor.placeholder='已锁定 — 点击 🔒 输入密码解锁'; setState('locked'); setStatus('内容已锁定',null); }
   else{ editor.placeholder='在此输入或粘贴内容…'; setState('unlocked'); setStatus('可编辑',true); }
 }
@@ -177,23 +176,29 @@ btnClear.onclick=async()=>{
   toast('本地数据已全部清除');
 };
 
-btnSave.onclick=async()=>{
+async function doSave(){
   let pwd=cachedPwd;
-  if(!pwd){pwd=await openModal('设置加密密码','保存');if(!pwd)return;}
+  if(!pwd){pwd=await openModal('设置加密密码','保存');if(!pwd){setStatus('需要密码才能保存',false);return;}}
   const plain=editor.value;
-  if(!plain.trim()){toast('内容为空');return;}
+  if(!plain.trim())return;
   try{
-    setStatus('加密中…',null);
+    setStatus('保存中…',null);
     const cipher=await encrypt(plain,pwd);
-    setStatus('上传中…',null);
     await saveToDB(cipher);
     cipherText=cipher;cachedPwd=pwd;localStorage.setItem(STORAGE_KEY,pwd);dirty=false;
-    setStatus('已保存',true);toast('已保存');setTime(new Date().toISOString());
-  }catch(e){setStatus('保存失败',false);toast('保存失败: '+e.message);}
-};
+    setStatus('已自动保存',true);setTime(new Date().toISOString());
+  }catch(e){setStatus('保存失败',false);}
+}
 
-editor.oninput=()=>{dirty=true;};
-document.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();if(!btnSave.disabled)btnSave.click();}};
+let saveTimer=null;
+editor.oninput=()=>{
+  dirty=true;
+  if(saveTimer)clearTimeout(saveTimer);
+  if(editor.disabled)return;
+  setStatus('等待保存…',null);
+  saveTimer=setTimeout(doSave, 1500);
+};
+document.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();doSave();}};
 
 (async()=>{
   if(useLocal){setStatus('本地模式 (localStorage)',true);}
