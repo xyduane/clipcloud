@@ -105,6 +105,8 @@ function setTime(ts){ if(!ts){updatedAt.textContent='';return;} updatedAt.textCo
 
 function applyLock(locked){
   editor.disabled=locked; btnLock.disabled=false;
+  btnLock.textContent=locked?'🔒':'🔓';
+  btnLock.title=locked?'解锁':'锁定';
   if(locked){ editor.value=''; editor.placeholder='已锁定 — 点击 🔒 输入密码解锁'; setState('locked'); setStatus('内容已锁定',null); }
   else{ editor.placeholder='在此输入或粘贴内容…'; setState('unlocked'); setStatus('可编辑',true); }
 }
