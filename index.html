@@ -53,6 +53,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="spacer"></div>
   <span id="statePill" class="status-pill pill-loading">加载中</span>
   <button id="btnLock" class="btn-ghost icon-btn" title="锁定" disabled>🔒</button>
+  <button id="btnClear" class="btn-ghost icon-btn" title="清除所有本地数据" style="font-size:.75rem">🗑️</button>
   <button id="btnSave" class="btn-accent" disabled>保存</button>
 </div>
 <div class="editor-wrap">
@@ -162,6 +163,18 @@ btnLock.onclick=async()=>{
   if(!pwd)return;
   if(await tryUnlock(pwd))toast('解锁成功');
   else{modalErr.textContent='密码错误';toast('密码错误');}
+};
+
+
+const btnClear = $('btnClear');
+btnClear.onclick=async()=>{
+  const ok=await openModal('确认清除所有本地数据？','清除');
+  if(!ok)return;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem('cc_note');
+  cachedPwd=''; cipherText=''; editor.value=''; dirty=false;
+  applyLock(true);
+  toast('本地数据已全部清除');
 };
 
 btnSave.onclick=async()=>{
